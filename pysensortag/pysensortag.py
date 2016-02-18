@@ -2,29 +2,21 @@
 
 class PySensorTag(object): 
 
-    def __init__(self, adapter):
-        self.device = adapter.connect('B0:B4:48:C0:5D:00')
+    def __init__(self, adapter, address):
+        self.device = adapter.connect(address)
         
-        print "Connexion au SensorTag"
+        print("Connected to SensorTag\n")
         
-        print "Nom du device: "
         value = self.device.handle_read(3)
-        print bytearray(value)
+        print("Device name: " + bytearray(value))
         
-        print "RSSI: "
-        print self.device.get_rssi()
+        print("RSSI: " + str(self.device.get_rssi()))
         
-        print "Firmware revision string: "
         value = self.device.handle_read(20)
-        print bytearray(value)
-        
-        self.test = "toto"
-       
-       
-    def GetTest(self):
-        print self.test
-        
-        
+        print("Firmware revision string: " + bytearray(value))
+        print("")
+
+               
     def ActivateTemperatureSensor(self):
         self.device.char_write_handle(36, [0x01])
 
@@ -35,12 +27,11 @@ class PySensorTag(object):
 
     def GetTemperature(self):
         value = self.device.handle_read(33)
-
         rawVobj = (value[1]<<8) + value[0]
         rawTamb = (value[3]<<8) + value[2]
-        
-        ambientTemp = float(rawTamb * 0.25 * 0.03125)
-        objectTemp = float(rawVobj * 0.25 * 0.03125)
+        SCALE_LSB = 0.03125
+        ambientTemp = float(rawTamb >> 2) * SCALE_LSB
+        objectTemp = float(rawVobj >> 2) * SCALE_LSB
         
         return (ambientTemp, objectTemp)
 
@@ -58,9 +49,9 @@ class PySensorTag(object):
 
         rawHtemp = (value[1]<<8) + value[0]
         rawHum = (value[3]<<8) + value[2]
-        
-        HTemp = float(rawHtemp / 65536.0 * 165 - 40)
-        Humidity = float(rawHum / 65536.0 * 100)
+        SCALE = 65536.0
+        HTemp = float(rawHtemp) / SCALE * 165 - 40
+        Humidity = float(rawHum) / SCALE * 100
         
         return (HTemp, Humidity)
 
